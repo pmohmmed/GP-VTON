@@ -10,6 +10,8 @@ import pycocotools.mask as maskUtils
 import math
 import json
 
+# TODO (DGT) (2)
+
 class AlignedDataset(BaseDataset):
     def initialize(self, opt, mode='train'):
         self.opt = opt

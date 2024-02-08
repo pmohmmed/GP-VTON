@@ -142,7 +142,7 @@ class ResidualBlock(nn.Module):
         out = self.relu(out)
         return out
 
-
+# generator
 class ResUnetGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, num_downs, ngf=64,
                  norm_layer=nn.BatchNorm2d, use_dropout=False):
@@ -164,10 +164,11 @@ class ResUnetGenerator(nn.Module):
     def forward(self, input):
         return self.model(input)
 
-
+#TODO (2)
 # Defines the submodule with skip connection.
 # X -------------------identity---------------------- X
 #   |-- downsampling -- |submodule| -- upsampling --|
+
 class ResUnetSkipConnectionBlock(nn.Module):
     def __init__(self, outer_nc, inner_nc, input_nc=None,
                  submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False):
@@ -204,6 +205,7 @@ class ResUnetSkipConnectionBlock(nn.Module):
             else:
                 up = [upsample, upconv, upnorm, uprelu] + res_upconv
             model = down + up
+            
         else:
             upsample = nn.Upsample(scale_factor=2, mode='nearest')
             upconv = nn.Conv2d(inner_nc*2, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
@@ -218,8 +220,8 @@ class ResUnetSkipConnectionBlock(nn.Module):
                 model = down + [submodule] + up + [nn.Dropout(0.5)]
             else:
                 model = down + [submodule] + up
-
         self.model = nn.Sequential(*model)
+        
 
     def forward(self, x):
         if self.outermost:
@@ -227,7 +229,8 @@ class ResUnetSkipConnectionBlock(nn.Module):
         else:
             return torch.cat([x, self.model(x)], 1)
 
-
+#TODO (2)
+# loss 
 class Vgg19(nn.Module):
     def __init__(self, requires_grad=False):
         super(Vgg19, self).__init__()
@@ -260,6 +263,8 @@ class Vgg19(nn.Module):
         out = [h_relu1, h_relu2, h_relu3, h_relu4, h_relu5]
         return out
 
+#TODO (2)
+# loss 
 class VGGLoss(nn.Module):
     def __init__(self, layids = None):
         super(VGGLoss, self).__init__()

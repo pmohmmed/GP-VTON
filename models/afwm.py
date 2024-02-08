@@ -90,9 +90,8 @@ def SquareTVLoss_v2(flow, interval_list=[1,5]):
 
     return tvloss
 
-
+# FPN-Task
 # backbone
-
 class ResBlock(nn.Module):
     def __init__(self, in_channels):
         super(ResBlock, self).__init__()
@@ -110,7 +109,6 @@ class ResBlock(nn.Module):
     def forward(self, x):
         return self.block(x) + x
 
-
 class DownSample(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DownSample, self).__init__()
@@ -123,7 +121,6 @@ class DownSample(nn.Module):
 
     def forward(self, x):
         return self.block(x)
-
 
 class FeatureEncoder(nn.Module):
     def __init__(self, in_channels, chns=[64, 128, 256, 256, 256]):
@@ -151,7 +148,7 @@ class FeatureEncoder(nn.Module):
             encoder_features.append(x)
         return encoder_features
 
-
+# pyramid encoder
 class RefinePyramid(nn.Module):
     def __init__(self, chns=[64, 128, 256, 256, 256], fpn_dim=256):
         super(RefinePyramid, self).__init__()
@@ -190,7 +187,9 @@ class RefinePyramid(nn.Module):
 
         return tuple(reversed(feature_list))
 
-
+## ------------------- VITON-HD -------------------
+#TODO(1)
+# Coarse / Fine Block (network) - VITON-HD
 class AFlowNet_Vitonhd_lrarms(nn.Module):
     def __init__(self, num_pyramid, fpn_dim=256):
         super(AFlowNet_Vitonhd_lrarms, self).__init__()
@@ -205,7 +204,7 @@ class AFlowNet_Vitonhd_lrarms(nn.Module):
         self.netAttentionRefine = []
         self.netPartFusion = []
         self.netSeg = []
-
+        
         for i in range(num_pyramid):
             netLeftMain_layer = torch.nn.Sequential(
                 torch.nn.Conv2d(in_channels=49, out_channels=128,
@@ -301,7 +300,10 @@ class AFlowNet_Vitonhd_lrarms(nn.Module):
                                 kernel_size=3, stride=1, padding=1),
                 torch.nn.Tanh()
             )
-
+            
+            # TODO
+            # Global Parsing
+            # Parsing Blcok 
             netSeg_layer = torch.nn.Sequential(
                 torch.nn.Conv2d(in_channels=fpn_dim*2, out_channels=128,
                                 kernel_size=3, stride=1, padding=1),
@@ -316,7 +318,8 @@ class AFlowNet_Vitonhd_lrarms(nn.Module):
                                 kernel_size=3, stride=1, padding=1),
                 torch.nn.Tanh()
             )
-
+            
+            # Fusion Block
             partFusion_layer = torch.nn.Sequential(
                 nn.Conv2d(fpn_dim*3, fpn_dim, kernel_size=1),
                 ResBlock(fpn_dim)
@@ -489,7 +492,7 @@ class AFlowNet_Vitonhd_lrarms(nn.Module):
             x_warp_left = x_warp_left * x_edge_left * (1-cur_preserve_mask)
             x_warp_torso = x_warp_torso * x_edge_torso * (1-cur_preserve_mask)
             x_warp_right = x_warp_right * x_edge_right * (1-cur_preserve_mask)
-
+            
             x_warp = torch.cat([x_warp_left,x_warp_torso,x_warp_right],1)
             x_warp = self.netPartFusion[i](x_warp)
 
@@ -500,7 +503,8 @@ class AFlowNet_Vitonhd_lrarms(nn.Module):
         return last_flow, last_flow_all, delta_list, x_all, x_edge_all, delta_x_all, delta_y_all, x_full_all, \
                 x_edge_full_all, attention_all, seg_list
 
-
+# TODO (1)
+# Controller
 class AFWM_Vitonhd_lrarms(nn.Module):
     def __init__(self, opt, input_nc, clothes_input_nc=3):
         super(AFWM_Vitonhd_lrarms, self).__init__()
@@ -552,7 +556,7 @@ class AFWM_Vitonhd_lrarms(nn.Module):
             print('update learning rate: %f -> %f' % (self.old_lr_warp, lr))
         self.old_lr_warp = lr
 
-
+## ------------------- dress code -------------------
 ### 混合所有衣服类别，flow预测网络引入spade区别不同类别衣服，衣服特征提取也使用SPADE，增加不同类别特征间的判别性
 class SPADE(nn.Module):
     def __init__(self, norm_nc, label_nc):
@@ -634,8 +638,8 @@ class FeatureEncoder_SPADE(nn.Module):
             encoder_features.append(x)
         return encoder_features
 
-
-
+#TODO
+# Coarse / Fine Block (network) - DressCode
 class AFlowNet_Dresscode_lrarms(nn.Module):
     def __init__(self, num_pyramid, fpn_dim=256):
         super(AFlowNet_Dresscode_lrarms, self).__init__()
@@ -1003,7 +1007,8 @@ class AFlowNet_Dresscode_lrarms(nn.Module):
         return last_flow, last_flow_all, delta_list, x_all, x_edge_all, delta_x_all, delta_y_all, x_full_all, \
                 x_edge_full_all, attention_all, seg_list
 
-
+#TODO
+# Controller - DressCode
 class AFWM_Dressescode_lrarms(nn.Module):
     def __init__(self, opt, input_nc, clothes_input_nc=3):
         super(AFWM_Dressescode_lrarms, self).__init__()
